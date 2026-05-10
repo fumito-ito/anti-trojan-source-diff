@@ -1,0 +1,29 @@
+name: Anti Trojan Source Diff
+description: Scan a unified diff file for newly added Trojan Source and invisible Unicode characters.
+author: fumito-ito
+inputs:
+  diff-file:
+    description: Path to a unified diff file to scan.
+    required: true
+  fail-on-warning:
+    description: Fail the action when warning-level findings are detected.
+    required: false
+    default: "false"
+  include-zero-width:
+    description: Report warning-level zero-width and similar invisible characters.
+    required: false
+    default: "true"
+  max-annotations:
+    description: Maximum number of GitHub annotations to emit.
+    required: false
+    default: "50"
+outputs:
+  error-count:
+    description: Number of error-level findings.
+  warning-count:
+    description: Number of warning-level findings.
+  finding-count:
+    description: Total number of findings.
+runs:
+  using: node24
+  main: dist/index.js
