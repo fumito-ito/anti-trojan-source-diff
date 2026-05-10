@@ -1,0 +1,31 @@
+{
+  "name": "anti-trojan-source-diff-action",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GitHub Action that scans added diff lines for Trojan Source and invisible Unicode characters.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "package": "ncc build src/index.ts --source-map --license licenses.txt -o dist",
+    "test": "tsc -p tsconfig.test.json && node --test \"build/test/**/*.test.js\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "github-action",
+    "trojan-source",
+    "unicode",
+    "diff"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.11.1"
+  },
+  "overrides": {
+    "undici": "^6.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@vercel/ncc": "^0.38.3",
+    "typescript": "^5.9.0"
+  }
+}
