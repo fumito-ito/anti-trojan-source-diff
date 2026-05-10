@@ -1,10 +1,13 @@
 name: Anti Trojan Source Diff
-description: Scan a unified diff file for newly added Trojan Source and invisible Unicode characters.
+description: Scan a unified diff for newly added Trojan Source and invisible Unicode characters.
 author: fumito-ito
 inputs:
+  diff:
+    description: Unified diff text to scan. Prefer diff-file for large diffs.
+    required: false
   diff-file:
     description: Path to a unified diff file to scan.
-    required: true
+    required: false
   fail-on-warning:
     description: Fail the action when warning-level findings are detected.
     required: false

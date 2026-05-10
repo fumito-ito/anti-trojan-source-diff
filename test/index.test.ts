@@ -41,6 +41,83 @@ test("clean diff passes and sets zero counts", async () => {
   assert.equal(calls.failed, undefined);
 });
 
+test("inline diff input is scanned without a diff file", async () => {
+  const diff = [
+    "diff --git a/src/app.ts b/src/app.ts",
+    "--- a/src/app.ts",
+    "+++ b/src/app.ts",
+    "@@ -1,0 +1,1 @@",
+    "+const unsafe = \"\u202E\";"
+  ].join("\n");
+
+  const calls = await withMockedCore(
+    {
+      diff
+    },
+    () => run()
+  );
+
+  assert.equal(calls.outputs["error-count"], "1");
+  assert.match(calls.failed ?? "", /Detected 1 error/);
+  assert.equal(calls.errors.length, 1);
+});
+
+test("empty inline diff input passes", async () => {
+  const calls = await withMockedCore(
+    {
+      diff: ""
+    },
+    () => run()
+  );
+
+  assert.deepEqual(calls.outputs, {
+    "error-count": "0",
+    "warning-count": "0",
+    "finding-count": "0"
+  });
+  assert.equal(calls.failed, undefined);
+});
+
+test("diff-file and inline diff cannot both contain diff text", async () => {
+  const diffFile = await writeTempDiff("diff --git a/a b/a\n");
+  const calls = await withMockedCore(
+    {
+      "diff-file": diffFile,
+      diff: "diff --git a/b b/b\n"
+    },
+    () => run()
+  );
+
+  assert.match(calls.failed ?? "", /Use only one/);
+});
+
+test("diff-file is accepted when inline diff is present but empty", async () => {
+  const diffFile = await writeTempDiff([
+    "diff --git a/src/app.ts b/src/app.ts",
+    "--- a/src/app.ts",
+    "+++ b/src/app.ts",
+    "@@ -1,0 +1,1 @@",
+    "+const safe = true;"
+  ].join("\n"));
+
+  const calls = await withMockedCore(
+    {
+      "diff-file": diffFile,
+      diff: ""
+    },
+    () => run()
+  );
+
+  assert.equal(calls.outputs["finding-count"], "0");
+  assert.equal(calls.failed, undefined);
+});
+
+test("missing diff source fails with an actionable message", async () => {
+  const calls = await withMockedCore({}, () => run());
+
+  assert.match(calls.failed ?? "", /diff-file.*diff/);
+});
+
 test("added bidi character produces an error and fails", async () => {
   const diffFile = await writeTempDiff([
     "diff --git a/src/app.ts b/src/app.ts",
@@ -191,6 +268,25 @@ async function withMockedCore(
   const warnings: string[] = [];
   const notices: string[] = [];
   let failed: string | undefined;
+  const restoredEnvironment: Record<string, string | undefined> = {};
+  const managedInputs = new Set([
+    "diff",
+    "diff-file",
+    "fail-on-warning",
+    "include-zero-width",
+    "max-annotations",
+    ...Object.keys(inputs)
+  ]);
+
+  for (const name of managedInputs) {
+    const environmentName = inputEnvironmentName(name);
+    restoredEnvironment[environmentName] = process.env[environmentName];
+    if (Object.prototype.hasOwnProperty.call(inputs, name)) {
+      process.env[environmentName] = inputs[name];
+    } else {
+      delete process.env[environmentName];
+    }
+  }
 
   mutableCore.getInput = (name, options) => {
     const value = inputs[name] ?? "";
@@ -219,6 +315,14 @@ async function withMockedCore(
   try {
     await callback();
   } finally {
+    for (const [name, value] of Object.entries(restoredEnvironment)) {
+      if (value === undefined) {
+        delete process.env[name];
+      } else {
+        process.env[name] = value;
+      }
+    }
+
     mutableCore.getInput = original.getInput;
     mutableCore.setOutput = original.setOutput;
     mutableCore.setFailed = original.setFailed;
@@ -228,4 +332,8 @@ async function withMockedCore(
   }
 
   return { outputs, failed, errors, warnings, notices };
+}
+
+function inputEnvironmentName(name: string): string {
+  return `INPUT_${name.replace(/ /g, "_").toUpperCase()}`;
 }

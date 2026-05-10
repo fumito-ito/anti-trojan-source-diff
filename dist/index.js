@@ -31207,11 +31207,10 @@ const diff_1 = __nccwpck_require__(9952);
 const scanner_1 = __nccwpck_require__(4105);
 async function run() {
     try {
-        const diffFile = core.getInput("diff-file", { required: true });
         const failOnWarning = parseBooleanInput("fail-on-warning", false);
         const includeZeroWidth = parseBooleanInput("include-zero-width", true);
         const maxAnnotations = parsePositiveIntegerInput("max-annotations", 50);
-        const diffText = await fs.readFile(diffFile, "utf8");
+        const diffText = await readDiffText();
         const addedLines = (0, diff_1.parseAddedLines)(diffText);
         const findings = addedLines.flatMap((line) => (0, scanner_1.scanAddedLine)(line, { includeZeroWidth }));
         (0, annotate_1.annotateFindings)(findings, { maxAnnotations });
@@ -31228,6 +31227,26 @@ async function run() {
         const message = error instanceof Error ? error.message : String(error);
         core.setFailed(message);
     }
+}
+async function readDiffText() {
+    const diffFile = core.getInput("diff-file");
+    const diff = core.getInput("diff", { trimWhitespace: false });
+    if (diffFile !== "" && diff !== "") {
+        throw new Error('Use only one of "diff-file" or "diff".');
+    }
+    if (diffFile !== "") {
+        return fs.readFile(diffFile, "utf8");
+    }
+    if (diff !== "" || hasRawActionInput("diff")) {
+        return diff;
+    }
+    throw new Error('Input "diff-file" or "diff" is required.');
+}
+function hasRawActionInput(name) {
+    return Object.prototype.hasOwnProperty.call(process.env, inputEnvironmentName(name));
+}
+function inputEnvironmentName(name) {
+    return `INPUT_${name.replace(/ /g, "_").toUpperCase()}`;
 }
 function parseBooleanInput(name, defaultValue) {
     const rawValue = core.getInput(name);

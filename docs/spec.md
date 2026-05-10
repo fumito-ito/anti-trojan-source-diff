@@ -2,7 +2,7 @@
 
 ## 1. Goal
 
-Build a small GitHub JavaScript Action that receives a unified diff file, scans only added lines for suspicious Unicode characters used in Trojan Source-style attacks or invisible-character copy/paste attacks, emits GitHub annotations on the exact changed lines, and fails the workflow when policy requires it.
+Build a small GitHub JavaScript Action that receives unified diff text, either directly or from a diff file, scans only added lines for suspicious Unicode characters used in Trojan Source-style attacks or invisible-character copy/paste attacks, emits GitHub annotations on the exact changed lines, and fails the workflow when policy requires it.
 
 This action must not be responsible for fetching pull request data, calling GitHub APIs, checking out code, or deciding which diff to generate. The caller workflow owns diff generation.
 
@@ -61,10 +61,20 @@ jobs:
 
 #### `diff-file`
 
-- Required: yes
+- Required: no
 - Type: string
 - Meaning: path to a unified diff file.
 - The action reads this file from the runner filesystem.
+
+#### `diff`
+
+- Required: no
+- Type: string
+- Meaning: unified diff text.
+- Intended for small diffs passed through workflow outputs.
+- Prefer `diff-file` for large diffs to avoid workflow output size and escaping limits.
+
+Exactly one input source should be used. The action fails if both `diff-file` and non-empty `diff` are supplied. If `diff` is explicitly supplied as an empty string, the action treats it as an empty diff and succeeds with zero findings.
 
 #### `fail-on-warning`
 

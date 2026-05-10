@@ -23,7 +23,8 @@
 
 - [ ] Implement `action.yml`.
 - [ ] Inputs:
-  - [ ] `diff-file`, required
+  - [ ] `diff`, optional inline unified diff text
+  - [ ] `diff-file`, optional path to a unified diff file
   - [ ] `fail-on-warning`, default `false`
   - [ ] `include-zero-width`, default `true`
   - [ ] `max-annotations`, default `50`
@@ -113,7 +114,7 @@
 - [ ] Read inputs.
 - [ ] Validate boolean inputs strictly.
 - [ ] Validate `max-annotations` as a positive integer.
-- [ ] Read `diff-file` as UTF-8.
+- [ ] Read inline `diff` or `diff-file` as UTF-8.
 - [ ] Parse added lines.
 - [ ] Scan added lines.
 - [ ] Annotate findings.

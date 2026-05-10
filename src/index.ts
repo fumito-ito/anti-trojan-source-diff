@@ -7,12 +7,11 @@ import type { Finding } from "./types";
 
 export async function run(): Promise<void> {
   try {
-    const diffFile = core.getInput("diff-file", { required: true });
     const failOnWarning = parseBooleanInput("fail-on-warning", false);
     const includeZeroWidth = parseBooleanInput("include-zero-width", true);
     const maxAnnotations = parsePositiveIntegerInput("max-annotations", 50);
 
-    const diffText = await fs.readFile(diffFile, "utf8");
+    const diffText = await readDiffText();
     const addedLines = parseAddedLines(diffText);
     const findings = addedLines.flatMap((line) => scanAddedLine(line, { includeZeroWidth }));
 
@@ -32,6 +31,33 @@ export async function run(): Promise<void> {
     const message = error instanceof Error ? error.message : String(error);
     core.setFailed(message);
   }
+}
+
+async function readDiffText(): Promise<string> {
+  const diffFile = core.getInput("diff-file");
+  const diff = core.getInput("diff", { trimWhitespace: false });
+
+  if (diffFile !== "" && diff !== "") {
+    throw new Error('Use only one of "diff-file" or "diff".');
+  }
+
+  if (diffFile !== "") {
+    return fs.readFile(diffFile, "utf8");
+  }
+
+  if (diff !== "" || hasRawActionInput("diff")) {
+    return diff;
+  }
+
+  throw new Error('Input "diff-file" or "diff" is required.');
+}
+
+function hasRawActionInput(name: string): boolean {
+  return Object.prototype.hasOwnProperty.call(process.env, inputEnvironmentName(name));
+}
+
+function inputEnvironmentName(name: string): string {
+  return `INPUT_${name.replace(/ /g, "_").toUpperCase()}`;
 }
 
 function parseBooleanInput(name: string, defaultValue: boolean): boolean {

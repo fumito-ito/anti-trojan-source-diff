@@ -1,6 +1,6 @@
 # Anti Trojan Source Diff Action
 
-This GitHub Action scans a unified diff file and reports newly added Trojan Source / invisible Unicode characters as GitHub annotations.
+This GitHub Action scans unified diff text and reports newly added Trojan Source / invisible Unicode characters as GitHub annotations.
 
 It is intentionally diff-only:
 
@@ -10,9 +10,9 @@ It is intentionally diff-only:
 - It does not scan the whole repository.
 - It does not auto-fix files or produce SARIF.
 
-The caller workflow is responsible for checking out the repository and generating the diff file.
+The caller workflow is responsible for checking out the repository and generating the diff.
 
-## Usage
+## Usage With A Diff File
 
 ```yaml
 name: trojan-source
@@ -47,14 +47,41 @@ jobs:
 
 `git diff --unified=0` is recommended because it keeps the diff small and includes only changed lines. The parser also handles unified diffs with context lines.
 
+## Usage With Inline Diff
+
+For small diffs, you can pass the unified diff directly through a workflow output:
+
+```yaml
+- name: Generate diff
+  id: diff
+  shell: bash
+  run: |
+    {
+      echo 'diff<<EOF'
+      git diff --unified=0 \
+        "${{ github.event.pull_request.base.sha }}" \
+        "${{ github.event.pull_request.head.sha }}"
+      echo 'EOF'
+    } >> "$GITHUB_OUTPUT"
+
+- uses: OWNER/anti-trojan-source-diff-action@v1
+  with:
+    diff: ${{ steps.diff.outputs.diff }}
+```
+
+Prefer `diff-file` for large diffs to avoid workflow output size and escaping limits. Use only one of `diff-file` or `diff` in a single action step.
+
 ## Inputs
 
 | Input | Required | Default | Description |
 |---|---:|---:|---|
-| `diff-file` | yes | | Path to a unified diff file. |
+| `diff` | no | | Unified diff text to scan. Prefer `diff-file` for large diffs. |
+| `diff-file` | no | | Path to a unified diff file. |
 | `fail-on-warning` | no | `false` | Fail when warning-level findings are detected. |
 | `include-zero-width` | no | `true` | Report zero-width and similar invisible characters as warnings. |
 | `max-annotations` | no | `50` | Maximum number of GitHub annotations to emit. Findings are still counted after this cap. |
+
+Either `diff-file` or `diff` must be provided. If both contain diff text, the action fails with an input error.
 
 ## Outputs
 

@@ -12,11 +12,11 @@ The action intentionally does not fetch pull request data or use GitHub APIs. Th
 
 ```text
 caller workflow
-  └─ generates unified diff file
+  └─ generates unified diff text or file
        ↓
-action input: diff-file
+action input: diff or diff-file
        ↓
-read diff text
+resolve diff text
        ↓
 parse unified diff
        ↓
@@ -158,7 +158,7 @@ Responsibilities:
 
 - Read inputs via `@actions/core`.
 - Validate booleans and positive integers.
-- Read diff file.
+- Read inline diff text or diff file.
 - Call parser, scanner, annotator.
 - Set outputs.
 - Decide pass/fail.
@@ -167,12 +167,11 @@ Pseudo-code:
 
 ```ts
 async function run(): Promise<void> {
-  const diffFile = core.getInput("diff-file", { required: true });
   const failOnWarning = parseBooleanInput("fail-on-warning", false);
   const includeZeroWidth = parseBooleanInput("include-zero-width", true);
   const maxAnnotations = parsePositiveIntegerInput("max-annotations", 50);
 
-  const diffText = await fs.readFile(diffFile, "utf8");
+  const diffText = await readDiffText();
   const addedLines = parseAddedLines(diffText);
   const findings = addedLines.flatMap((line) => scanAddedLine(line, { includeZeroWidth }));
 
@@ -201,7 +200,9 @@ This action still treats `docs/spec.md` as the authoritative implementation poli
 
 ### Diff file input instead of multiline string input
 
-Passing large diffs through workflow outputs or action inputs can hit size and escaping issues. A file path keeps the action simple and robust.
+Passing large diffs through workflow outputs or action inputs can hit size and escaping issues. A file path keeps that path simple and robust.
+
+Inline `diff` input is still supported for small diffs and simple workflows. If both `diff-file` and non-empty `diff` are supplied, the action fails so the scanned source is unambiguous.
 
 ### No GitHub API dependency
 
