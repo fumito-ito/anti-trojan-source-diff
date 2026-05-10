@@ -38,7 +38,7 @@ export function scanAddedLine(line: AddedLine, options: ScanOptions): Finding[] 
       continue;
     }
 
-    const errorName = ERROR_CODE_POINTS.get(value);
+    const errorName = getErrorCodePointName(value);
     if (errorName !== undefined) {
       findings.push(toFinding(line, column, value, errorName, "error", character));
       column += 1;
@@ -54,6 +54,27 @@ export function scanAddedLine(line: AddedLine, options: ScanOptions): Finding[] 
   }
 
   return findings;
+}
+
+function getErrorCodePointName(value: number): string | undefined {
+  const mappedName = ERROR_CODE_POINTS.get(value);
+  if (mappedName !== undefined) {
+    return mappedName;
+  }
+
+  return getVariationSelectorName(value);
+}
+
+function getVariationSelectorName(value: number): string | undefined {
+  if (value >= 0xfe00 && value <= 0xfe0f) {
+    return `VARIATION SELECTOR-${value - 0xfe00 + 1}`;
+  }
+
+  if (value >= 0xe0100 && value <= 0xe01ef) {
+    return `VARIATION SELECTOR-${value - 0xe0100 + 17}`;
+  }
+
+  return undefined;
 }
 
 function toFinding(
