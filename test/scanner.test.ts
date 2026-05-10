@@ -25,9 +25,28 @@ const WARNING_CODE_POINTS = [
   ["\u061C", "U+061C", "ARABIC LETTER MARK"]
 ] as const;
 
+const VARIATION_SELECTOR_ERROR_CODE_POINTS = [
+  ["\uFE00", "U+FE00", "VARIATION SELECTOR-1"],
+  ["\uFE0F", "U+FE0F", "VARIATION SELECTOR-16"],
+  ["\u{E0100}", "U+E0100", "VARIATION SELECTOR-17"],
+  ["\u{E01EF}", "U+E01EF", "VARIATION SELECTOR-256"]
+] as const;
+
 test("detects every error-level code point", () => {
   for (const [character, codePoint, name] of ERROR_CODE_POINTS) {
     const findings = scanAddedLine(addedLine(`x${character}y`), { includeZeroWidth: true });
+
+    assert.equal(findings.length, 1);
+    assert.equal(findings[0].severity, "error");
+    assert.equal(findings[0].codePoint, codePoint);
+    assert.equal(findings[0].name, name);
+    assert.equal(findings[0].column, 2);
+  }
+});
+
+test("detects variation selectors as error-level findings", () => {
+  for (const [character, codePoint, name] of VARIATION_SELECTOR_ERROR_CODE_POINTS) {
+    const findings = scanAddedLine(addedLine(`x${character}y`), { includeZeroWidth: false });
 
     assert.equal(findings.length, 1);
     assert.equal(findings[0].severity, "error");
@@ -63,6 +82,12 @@ test("reports 1-based columns for ASCII content", () => {
 
 test("counts a surrogate pair as one user-facing column", () => {
   const findings = scanAddedLine(addedLine("a😀\u202Eb"), { includeZeroWidth: true });
+
+  assert.equal(findings[0].column, 3);
+});
+
+test("reports columns for supplementary-plane variation selectors by code point", () => {
+  const findings = scanAddedLine(addedLine("a😀\u{E0100}b"), { includeZeroWidth: true });
 
   assert.equal(findings[0].column, 3);
 });

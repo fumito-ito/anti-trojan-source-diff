@@ -79,6 +79,8 @@
   - [ ] U+2067
   - [ ] U+2068
   - [ ] U+2069
+  - [ ] U+FE00..U+FE0F
+  - [ ] U+E0100..U+E01EF
 - [ ] Add warning-level policy map:
   - [ ] U+200B
   - [ ] U+200C
@@ -92,6 +94,7 @@
 - [ ] Report 1-based columns.
 - [ ] Honor `includeZeroWidth`.
 - [ ] Add tests for all error code points.
+- [ ] Add tests for variation selector error ranges.
 - [ ] Add tests for all warning code points.
 - [ ] Add test for suppressed warning findings.
 - [ ] Add test for column counting with normal ASCII.

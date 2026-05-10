@@ -122,7 +122,7 @@ Total number of findings.
 
 ### 5.1 Error-level characters
 
-These should fail by default because they are directly relevant to Trojan Source-style bidirectional text attacks.
+These should fail by default because they are directly relevant to Trojan Source-style bidirectional text attacks or invisible payload encoding.
 
 | Code point | Name |
 |---|---|
@@ -135,6 +135,10 @@ These should fail by default because they are directly relevant to Trojan Source
 | U+2067 | RIGHT-TO-LEFT ISOLATE |
 | U+2068 | FIRST STRONG ISOLATE |
 | U+2069 | POP DIRECTIONAL ISOLATE |
+| U+FE00..U+FE0F | VARIATION SELECTOR-1 through VARIATION SELECTOR-16 |
+| U+E0100..U+E01EF | VARIATION SELECTOR-17 through VARIATION SELECTOR-256 |
+
+Variation selectors have legitimate Unicode uses, especially for emoji and ideographic variants. In this action they are still error-level because GlassWorm-style payloads can encode bytes into long runs of invisible variation selectors and the action is intended to block newly introduced invisible code in diffs.
 
 ### 5.2 Warning-level characters
 
@@ -274,9 +278,9 @@ The committed action must include `dist/index.js`, because GitHub Actions runs t
 ## 10. Acceptance criteria
 
 - `action.yml` defines a JavaScript action with `runs.using` set to a current GitHub-supported Node runtime.
-- The action accepts `diff-file` and does not require GitHub API permissions.
+- The action accepts `diff-file` or `diff` and does not require GitHub API permissions.
 - The action parses unified diffs and scans only added lines.
-- Error-level Bidi control characters produce error annotations and fail the job.
+- Error-level Bidi control characters and variation selectors produce error annotations and fail the job.
 - Warning-level invisible characters produce warning annotations and do not fail by default.
 - `fail-on-warning=true` makes warning-level findings fail the job.
 - `include-zero-width=false` suppresses warning-level invisible-character checks.

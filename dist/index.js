@@ -31314,7 +31314,7 @@ function scanAddedLine(line, options) {
             column += 1;
             continue;
         }
-        const errorName = ERROR_CODE_POINTS.get(value);
+        const errorName = getErrorCodePointName(value);
         if (errorName !== undefined) {
             findings.push(toFinding(line, column, value, errorName, "error", character));
             column += 1;
@@ -31327,6 +31327,22 @@ function scanAddedLine(line, options) {
         column += 1;
     }
     return findings;
+}
+function getErrorCodePointName(value) {
+    const mappedName = ERROR_CODE_POINTS.get(value);
+    if (mappedName !== undefined) {
+        return mappedName;
+    }
+    return getVariationSelectorName(value);
+}
+function getVariationSelectorName(value) {
+    if (value >= 0xfe00 && value <= 0xfe0f) {
+        return `VARIATION SELECTOR-${value - 0xfe00 + 1}`;
+    }
+    if (value >= 0xe0100 && value <= 0xe01ef) {
+        return `VARIATION SELECTOR-${value - 0xe0100 + 17}`;
+    }
+    return undefined;
 }
 function toFinding(line, column, value, name, severity, character) {
     return {

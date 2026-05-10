@@ -69,6 +69,8 @@ U+2066 LEFT-TO-RIGHT ISOLATE
 U+2067 RIGHT-TO-LEFT ISOLATE
 U+2068 FIRST STRONG ISOLATE
 U+2069 POP DIRECTIONAL ISOLATE
+U+FE00..U+FE0F VARIATION SELECTOR-1 through VARIATION SELECTOR-16
+U+E0100..U+E01EF VARIATION SELECTOR-17 through VARIATION SELECTOR-256
 ```
 
 ### Warning-level characters
@@ -139,6 +141,7 @@ Minimum tests:
 
 - Clean diff passes.
 - Added Bidi character produces an error finding.
+- Added variation selector produces an error finding.
 - Removed Bidi character is ignored.
 - Context Bidi character is ignored.
 - Added zero-width character produces warning by default.
