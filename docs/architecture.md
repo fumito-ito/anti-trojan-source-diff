@@ -193,6 +193,12 @@ async function run(): Promise<void> {
 
 ## Design choices
 
+### Reference material
+
+Use `https://github.com/nickboucher/trojan-source` as a primary background reference for Trojan Source examples and terminology.
+
+This action still treats `docs/spec.md` as the authoritative implementation policy. Do not add code points, repository-wide scanning, language-specific parsing, API calls, or other broader behavior solely because it appears in the reference material.
+
 ### Diff file input instead of multiline string input
 
 Passing large diffs through workflow outputs or action inputs can hit size and escaping issues. A file path keeps the action simple and robust.

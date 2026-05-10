@@ -98,3 +98,8 @@ npm run package
 ```
 
 `action.yml` points to `dist/index.js`, so run `npm run package` before committing release changes.
+
+## References
+
+- [nickboucher/trojan-source](https://github.com/nickboucher/trojan-source) for Trojan Source proof-of-concept examples and background material.
+- [Trojan Source: Invisible Vulnerabilities](https://trojansource.codes/) for the related paper and disclosure material.
