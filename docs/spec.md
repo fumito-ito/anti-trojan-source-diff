@@ -156,6 +156,73 @@ These are useful for Discord/SNS copy-paste defense, but can have legitimate use
 
 If `include-zero-width=false`, warning-level characters are not reported.
 
+### 5.3 Planned policy expansions
+
+The current implementation intentionally covers the explicit code points listed above. The following policy expansions are planned as separate feature branches. Each branch must update this section, tests, README, and implementation together before changing behavior.
+
+#### Additional control characters
+
+Add detection for C0 and C1 control characters in added diff lines, excluding characters that are already structural or commonly valid in source diffs.
+
+Initial target set:
+
+- U+0000..U+001F, excluding U+0009 CHARACTER TABULATION.
+- U+007F DELETE.
+- U+0080..U+009F.
+
+Severity: `error`.
+
+Rationale: these characters are not normally meaningful as literal source text and can affect terminal/editor display, copy/paste behavior, or downstream tooling. Line terminators are not expected inside parsed added-line content because diff parsing splits lines before scanning.
+
+#### Additional default-ignorable and format characters
+
+Add warning-level detection for additional Unicode characters whose display can be absent, unstable, or context-dependent, using Unicode data as the source of truth rather than a hand-written ad hoc list.
+
+Initial target set:
+
+- Unicode `Default_Ignorable_Code_Point` characters not already classified as error-level.
+- Unicode general category `Cf` format characters not already classified as error-level.
+- Exclude characters already listed in the warning-level table from duplicate reporting.
+
+Severity: `warning` by default; fails only when `fail-on-warning=true`.
+
+Configuration: `include-zero-width=false` suppresses these findings for backward compatibility, even though the expanded set is broader than zero-width characters.
+
+Rationale: many format/default-ignorable characters have legitimate uses in localized text, emoji sequences, identifiers, and typography. They are still review-worthy in source diffs because they may be invisible to reviewers.
+
+#### Mixed-script confusable identifiers
+
+Add warning-level detection for added-line tokens that appear to contain mixed-script homoglyph/confusable usage.
+
+Initial target heuristic:
+
+- Tokenize added line content into identifier-like runs of Unicode letters, marks, decimal numbers, connector punctuation, `$`, and `_`.
+- For each token, report a warning when both conditions hold:
+  - the token contains at least one ASCII Latin letter or digit; and
+  - the token contains at least one non-ASCII character whose Unicode Technical Standard #39 confusable skeleton maps to ASCII letters, digits, or identifier punctuation.
+
+Severity: `warning` by default; fails only when `fail-on-warning=true`.
+
+Non-goals for the initial branch:
+
+- Do not build a repository-wide symbol table.
+- Do not compare new identifiers against all existing repository identifiers.
+- Do not attempt language-specific parsing.
+- Do not warn merely because a token is non-ASCII.
+- Do not claim complete homoglyph protection.
+
+Rationale: homoglyph detection has substantially higher false-positive risk than Bidi or control-character detection, especially for internationalized code and documentation. A mixed ASCII/non-ASCII token heuristic catches common attacks such as Cyrillic letters embedded in Latin-looking identifiers while avoiding broad warnings for ordinary non-ASCII text.
+
+### 5.4 Policy references
+
+The implemented and planned policy is based on:
+
+- Trojan Source proof-of-concept repository: `https://github.com/nickboucher/trojan-source`
+- Trojan Source paper: `https://trojansource.codes/trojan-source.pdf`
+- Unicode Technical Report #36, Unicode Security Considerations: `https://www.unicode.org/reports/tr36/`
+- Unicode Technical Standard #39, Unicode Security Mechanisms: `https://www.unicode.org/reports/tr39/`
+- Unicode security data files, including confusables data: `https://www.unicode.org/Public/security/latest/`
+
 ## 6. Diff parsing requirements
 
 The action scans unified diff text. It must identify added lines and their new-file line numbers.
