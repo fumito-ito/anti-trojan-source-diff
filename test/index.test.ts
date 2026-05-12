@@ -3,19 +3,8 @@ import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import test from "node:test";
-import * as core from "@actions/core";
-import { run } from "../src/index";
-
-type CoreMock = {
-  getInput: typeof core.getInput;
-  setOutput: typeof core.setOutput;
-  setFailed: typeof core.setFailed;
-  error: typeof core.error;
-  warning: typeof core.warning;
-  notice: typeof core.notice;
-};
-
-const mutableCore = core as unknown as CoreMock;
+import { run } from "../src/action";
+import type { ActionCore } from "../src/action";
 
 test("clean diff passes and sets zero counts", async () => {
   const diffFile = await writeTempDiff([
@@ -30,7 +19,7 @@ test("clean diff passes and sets zero counts", async () => {
     {
       "diff-file": diffFile
     },
-    () => run()
+    (core) => run(core)
   );
 
   assert.deepEqual(calls.outputs, {
@@ -54,7 +43,7 @@ test("inline diff input is scanned without a diff file", async () => {
     {
       diff
     },
-    () => run()
+    (core) => run(core)
   );
 
   assert.equal(calls.outputs["error-count"], "1");
@@ -67,7 +56,7 @@ test("empty inline diff input passes", async () => {
     {
       diff: ""
     },
-    () => run()
+    (core) => run(core)
   );
 
   assert.deepEqual(calls.outputs, {
@@ -85,7 +74,7 @@ test("diff-file and inline diff cannot both contain diff text", async () => {
       "diff-file": diffFile,
       diff: "diff --git a/b b/b\n"
     },
-    () => run()
+    (core) => run(core)
   );
 
   assert.match(calls.failed ?? "", /Use only one/);
@@ -105,7 +94,7 @@ test("diff-file is accepted when inline diff is present but empty", async () => 
       "diff-file": diffFile,
       diff: ""
     },
-    () => run()
+    (core) => run(core)
   );
 
   assert.equal(calls.outputs["finding-count"], "0");
@@ -113,7 +102,7 @@ test("diff-file is accepted when inline diff is present but empty", async () => 
 });
 
 test("missing diff source fails with an actionable message", async () => {
-  const calls = await withMockedCore({}, () => run());
+  const calls = await withMockedCore({}, (core) => run(core));
 
   assert.match(calls.failed ?? "", /diff-file.*diff/);
 });
@@ -131,7 +120,7 @@ test("added bidi character produces an error and fails", async () => {
     {
       "diff-file": diffFile
     },
-    () => run()
+    (core) => run(core)
   );
 
   assert.equal(calls.outputs["error-count"], "1");
@@ -153,7 +142,7 @@ test("added variation selector produces an error and fails", async () => {
     {
       "diff-file": diffFile
     },
-    () => run()
+    (core) => run(core)
   );
 
   assert.equal(calls.outputs["error-count"], "1");
@@ -177,7 +166,7 @@ test("removed and context bidi characters are ignored", async () => {
     {
       "diff-file": diffFile
     },
-    () => run()
+    (core) => run(core)
   );
 
   assert.equal(calls.outputs["finding-count"], "0");
@@ -197,7 +186,7 @@ test("zero-width warnings are reported by default without failing", async () => 
     {
       "diff-file": diffFile
     },
-    () => run()
+    (core) => run(core)
   );
 
   assert.equal(calls.outputs["error-count"], "0");
@@ -220,7 +209,7 @@ test("zero-width warnings are suppressed when include-zero-width=false", async (
       "diff-file": diffFile,
       "include-zero-width": "false"
     },
-    () => run()
+    (core) => run(core)
   );
 
   assert.equal(calls.outputs["finding-count"], "0");
@@ -241,7 +230,7 @@ test("warning fails only when fail-on-warning=true", async () => {
       "diff-file": diffFile,
       "fail-on-warning": "true"
     },
-    () => run()
+    (core) => run(core)
   );
 
   assert.equal(calls.outputs["warning-count"], "1");
@@ -254,7 +243,7 @@ test("invalid inputs fail with actionable messages", async () => {
       "diff-file": "unused.diff",
       "fail-on-warning": "yes"
     },
-    () => run()
+    (core) => run(core)
   );
 
   assert.match(calls.failed ?? "", /fail-on-warning/);
@@ -269,7 +258,7 @@ async function writeTempDiff(content: string): Promise<string> {
 
 async function withMockedCore(
   inputs: Record<string, string>,
-  callback: () => Promise<void>
+  callback: (core: ActionCore) => Promise<void>
 ): Promise<{
   outputs: Record<string, string>;
   failed: string | undefined;
@@ -277,14 +266,6 @@ async function withMockedCore(
   warnings: string[];
   notices: string[];
 }> {
-  const original = {
-    getInput: mutableCore.getInput,
-    setOutput: mutableCore.setOutput,
-    setFailed: mutableCore.setFailed,
-    error: mutableCore.error,
-    warning: mutableCore.warning,
-    notice: mutableCore.notice
-  };
   const outputs: Record<string, string> = {};
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -310,32 +291,34 @@ async function withMockedCore(
     }
   }
 
-  mutableCore.getInput = (name, options) => {
-    const value = inputs[name] ?? "";
-    if (options?.required === true && value === "") {
-      throw new Error(`Input required and not supplied: ${name}`);
-    }
+  const core: ActionCore = {
+    getInput(name, options) {
+      const value = inputs[name] ?? "";
+      if (options?.required === true && value === "") {
+        throw new Error(`Input required and not supplied: ${name}`);
+      }
 
-    return value;
-  };
-  mutableCore.setOutput = (name, value) => {
-    outputs[name] = String(value);
-  };
-  mutableCore.setFailed = (message) => {
-    failed = String(message);
-  };
-  mutableCore.error = (message) => {
-    errors.push(String(message));
-  };
-  mutableCore.warning = (message) => {
-    warnings.push(String(message));
-  };
-  mutableCore.notice = (message) => {
-    notices.push(String(message));
+      return value;
+    },
+    setOutput(name, value) {
+      outputs[name] = String(value);
+    },
+    setFailed(message) {
+      failed = String(message);
+    },
+    error(message) {
+      errors.push(String(message));
+    },
+    warning(message) {
+      warnings.push(String(message));
+    },
+    notice(message) {
+      notices.push(String(message));
+    }
   };
 
   try {
-    await callback();
+    await callback(core);
   } finally {
     for (const [name, value] of Object.entries(restoredEnvironment)) {
       if (value === undefined) {
@@ -344,13 +327,6 @@ async function withMockedCore(
         process.env[name] = value;
       }
     }
-
-    mutableCore.getInput = original.getInput;
-    mutableCore.setOutput = original.setOutput;
-    mutableCore.setFailed = original.setFailed;
-    mutableCore.error = original.error;
-    mutableCore.warning = original.warning;
-    mutableCore.notice = original.notice;
   }
 
   return { outputs, failed, errors, warnings, notices };
