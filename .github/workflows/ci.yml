@@ -28,7 +28,12 @@ jobs:
       - run: npm test
       - run: npm run package
       - name: Verify bundled action is up to date
-        run: git diff --exit-code -- dist/index.js
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain -- dist)" ]; then
+            git status --short -- dist
+            exit 1
+          fi
       - name: Generate PR diff
         if: github.event_name == 'pull_request'
         shell: bash
