@@ -151,6 +151,28 @@ test("added variation selector produces an error and fails", async () => {
   assert.equal(calls.errors.length, 1);
 });
 
+test("added control character produces an error and fails", async () => {
+  const diffFile = await writeTempDiff([
+    "diff --git a/src/app.ts b/src/app.ts",
+    "--- a/src/app.ts",
+    "+++ b/src/app.ts",
+    "@@ -1,0 +1,1 @@",
+    "+const marker = \"\u0000\";"
+  ].join("\n"));
+
+  const calls = await withMockedCore(
+    {
+      "diff-file": diffFile
+    },
+    (core) => run(core)
+  );
+
+  assert.equal(calls.outputs["error-count"], "1");
+  assert.equal(calls.outputs["warning-count"], "0");
+  assert.match(calls.failed ?? "", /Detected 1 error/);
+  assert.equal(calls.errors.length, 1);
+});
+
 test("removed and context bidi characters are ignored", async () => {
   const diffFile = await writeTempDiff([
     "diff --git a/src/app.ts b/src/app.ts",

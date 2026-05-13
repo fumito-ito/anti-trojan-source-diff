@@ -54,5 +54,5 @@ export function annotateFindings(
 }
 
 function formatMessage(finding: Finding): string {
-  return `${finding.codePoint} ${finding.name} (${finding.severity}): suspicious invisible or bidirectional control character. Remove it unless it is intentionally required.`;
+  return `${finding.codePoint} ${finding.name} (${finding.severity}): suspicious invisible, bidirectional, or control character. Remove it unless it is intentionally required.`;
 }

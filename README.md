@@ -97,6 +97,8 @@ Bidirectional formatting controls such as `U+202E RIGHT-TO-LEFT OVERRIDE` are er
 
 Variation selectors such as `U+FE0F VARIATION SELECTOR-16` and `U+E0100 VARIATION SELECTOR-17` are also error-level findings. These characters can be used for legitimate emoji or ideographic variants, but they can also encode invisible payload bytes in GlassWorm-style attacks, so newly added variation selectors fail by default.
 
+Control characters such as `U+0000 NULL`, `U+001B ESCAPE`, `U+007F DELETE`, and C1 controls `U+0080..U+009F` are error-level findings. `U+0009 CHARACTER TABULATION` is excluded because tabs are common and valid in source diffs.
+
 Zero-width and similar invisible characters such as `U+200B ZERO WIDTH SPACE`, `U+200D ZERO WIDTH JOINER`, and `U+00AD SOFT HYPHEN` are warning-level findings by default. These characters can be legitimate in localized text, emoji sequences, or typography, so warnings do not fail unless configured.
 
 To fail on warnings:
