@@ -1,0 +1,4 @@
+This file intentionally exists to verify whether variation selectors are detected.
+It is an inert sample only: no decoder, no executable payload, and no network behavior.
+The next line contains extended Unicode variation selectors from U+E0100 upward.
+marker: 󠄀󠄁󠄂󠄃󠄄󠄅
