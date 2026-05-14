@@ -1,164 +1,145 @@
-# task.md: Implementation Tasks
+# task.md: Current Task Status
 
-## Phase 0: Project bootstrap
+This file tracks the current implementation state against `docs/spec.md`.
 
-- [ ] Create `package.json`.
-- [ ] Add dependencies:
-  - [ ] `@actions/core`
-- [ ] Add dev dependencies:
-  - [ ] `typescript`
-  - [ ] `@types/node`
-  - [ ] `@vercel/ncc`
-  - [ ] test framework of choice, preferably Node's built-in test runner or Vitest
-- [ ] Create `tsconfig.json`.
-- [ ] Create `action.yml`.
-- [ ] Create `src/` and `test/` directories.
-- [ ] Add npm scripts:
-  - [ ] `build`: compile TypeScript
-  - [ ] `package`: bundle with ncc to `dist/index.js`
-  - [ ] `test`: run tests
-  - [ ] `lint` or `typecheck`: at least run `tsc --noEmit`
+## Completed v1 scope
 
-## Phase 1: Action metadata
+- [x] Project bootstrap
+  - [x] `package.json`
+  - [x] `package-lock.json`
+  - [x] TypeScript configuration
+  - [x] `action.yml`
+  - [x] `src/` and `test/` directories
+  - [x] npm scripts: `build`, `package`, `test`, `typecheck`
+- [x] Runtime and packaging
+  - [x] JavaScript Action using Node 24
+  - [x] `action.yml` points to `dist/index.js`
+  - [x] Bundling with `@vercel/ncc`
+  - [x] Generated `dist` files are committed
+  - [x] TypeScript uses `module: "Node16"` and `moduleResolution: "Node16"`
+  - [x] `@actions/core` v3 is loaded with dynamic import at runtime
+- [x] Action metadata
+  - [x] Input: `diff`
+  - [x] Input: `diff-file`
+  - [x] Input: `fail-on-warning`
+  - [x] Input: `include-zero-width`
+  - [x] Input: `max-annotations`
+  - [x] Output: `error-count`
+  - [x] Output: `warning-count`
+  - [x] Output: `finding-count`
+- [x] Required module split
+  - [x] `src/index.ts`
+  - [x] `src/action.ts`
+  - [x] `src/diff.ts`
+  - [x] `src/scanner.ts`
+  - [x] `src/annotate.ts`
+  - [x] `src/types.ts`
+- [x] Unified diff parser
+  - [x] Parses `+++ b/path` file headers
+  - [x] Skips `+++ /dev/null`
+  - [x] Parses hunk headers
+  - [x] Tracks new-file line numbers
+  - [x] Scans added lines only
+  - [x] Ignores removed lines
+  - [x] Ignores context lines while preserving line numbers
+  - [x] Handles `\ No newline at end of file`
+  - [x] Supports both `--unified=0` and context diffs
+- [x] Scanner
+  - [x] Detects Bidi control characters as error-level findings
+  - [x] Detects variation selectors as error-level findings
+  - [x] Detects C0 and C1 control characters as error-level findings, excluding tab
+  - [x] Detects configured zero-width and similar characters as warning-level findings
+  - [x] Honors `include-zero-width=false`
+  - [x] Reports 1-based line and column numbers
+  - [x] Iterates strings by Unicode code point
+- [x] Annotation layer
+  - [x] Uses `core.error` for error-level findings
+  - [x] Uses `core.warning` for warning-level findings
+  - [x] Uses `core.notice` for truncation notices
+  - [x] Includes file, start/end line, start/end column, and title
+  - [x] Caps emitted annotations with `max-annotations`
+- [x] Action orchestration
+  - [x] Reads either inline `diff` or `diff-file`
+  - [x] Fails when both `diff-file` and non-empty `diff` are supplied
+  - [x] Treats explicit empty `diff` as an empty diff
+  - [x] Validates boolean inputs strictly
+  - [x] Validates `max-annotations` as a positive integer
+  - [x] Sets output counts
+  - [x] Fails on error-level findings
+  - [x] Fails on warning-level findings only when `fail-on-warning=true`
+- [x] Tests
+  - [x] Clean diff passes
+  - [x] Added Bidi character fails
+  - [x] Removed Bidi character is ignored
+  - [x] Context Bidi character is ignored
+  - [x] Added variation selector fails
+  - [x] Added control character fails
+  - [x] Added zero-width character warns by default
+  - [x] Zero-width warnings are suppressed when `include-zero-width=false`
+  - [x] Warning fails only when `fail-on-warning=true`
+  - [x] Multiple files preserve annotation paths
+  - [x] Hunk line numbers are correct
+  - [x] Scanner columns are 1-based
+  - [x] Surrogate pairs count as one user-facing column
+  - [x] Tab is not reported as a control-character finding
+- [x] README
+  - [x] Describes what the action does
+  - [x] Describes intentional non-goals
+  - [x] Includes minimal workflow example
+  - [x] Recommends `git diff --unified=0`
+  - [x] Explains error vs warning policy
+  - [x] Shows `fail-on-warning: true`
+  - [x] Shows `include-zero-width: false`
+- [x] Repository CI
+  - [x] Runs `npm ci`
+  - [x] Runs `npm run typecheck`
+  - [x] Runs `npm test`
+  - [x] Runs `npm run package`
+  - [x] Verifies generated `dist` is up to date
+  - [x] Self-checks pull request diffs using this local action
 
-- [ ] Implement `action.yml`.
-- [ ] Inputs:
-  - [ ] `diff`, optional inline unified diff text
-  - [ ] `diff-file`, optional path to a unified diff file
-  - [ ] `fail-on-warning`, default `false`
-  - [ ] `include-zero-width`, default `true`
-  - [ ] `max-annotations`, default `50`
-- [ ] Outputs:
-  - [ ] `error-count`
-  - [ ] `warning-count`
-  - [ ] `finding-count`
-- [ ] Use a current GitHub-supported Node runtime in `runs.using`.
-- [ ] Set `runs.main` to `dist/index.js`.
+## Open planned policy expansions
 
-## Phase 2: Shared types
+The following tasks are intentionally not implemented yet. Implement each item on a separate feature branch and update `docs/spec.md`, tests, README, and generated `dist` together.
 
-- [ ] Create `src/types.ts`.
-- [ ] Define:
-  - [ ] `Severity`
-  - [ ] `AddedLine`
-  - [ ] `Finding`
+### Additional default-ignorable and format characters
 
-## Phase 3: Unified diff parser
+- [ ] Choose the Unicode data source and generation/update workflow.
+- [ ] Add warning-level detection for `Default_Ignorable_Code_Point` characters not already error-level.
+- [ ] Add warning-level detection for Unicode `Cf` format characters not already error-level.
+- [ ] Avoid duplicate reporting for characters already listed in the existing warning policy.
+- [ ] Keep `include-zero-width=false` as the suppression switch for this expanded warning set.
+- [ ] Add focused tests for representative default-ignorable and format characters.
+- [ ] Add tests proving existing error-level characters remain errors.
+- [ ] Update README policy text.
+- [ ] Run `npm test`.
+- [ ] Run `npm run typecheck`.
+- [ ] Run `npm run package`.
 
-- [ ] Create `src/diff.ts`.
-- [ ] Implement `parseAddedLines(diffText: string): AddedLine[]`.
-- [ ] Parse `+++ b/path` file headers.
-- [ ] Skip `+++ /dev/null` deleted-file headers.
-- [ ] Parse hunk headers with regex like:
+### Mixed-script confusable identifiers
 
-```regex
-/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/
+- [ ] Choose the Unicode TR39 confusables data source and generation/update workflow.
+- [ ] Implement identifier-like tokenization for added diff lines.
+- [ ] Detect mixed ASCII and non-ASCII confusable token patterns.
+- [ ] Treat findings as warning-level.
+- [ ] Avoid warning on ordinary non-ASCII text without mixed-script confusable risk.
+- [ ] Do not add repository-wide symbol-table analysis.
+- [ ] Do not add language-specific parsing.
+- [ ] Add tests for a representative Cyrillic-in-Latin-looking identifier.
+- [ ] Add tests for ordinary non-ASCII text that should not warn.
+- [ ] Update README policy text.
+- [ ] Run `npm test`.
+- [ ] Run `npm run typecheck`.
+- [ ] Run `npm run package`.
+
+## Routine verification before merging changes
+
+Run these commands before considering an implementation change complete:
+
+```bash
+npm test
+npm run typecheck
+npm run package
 ```
 
-- [ ] Track new-file line numbers.
-- [ ] Return only added lines that start with `+` but not `+++ `.
-- [ ] Treat a line exactly equal to `+` as an added empty line.
-- [ ] Ignore removed lines.
-- [ ] Increment new-file line numbers for context lines.
-- [ ] Ignore `\ No newline at end of file` marker lines.
-- [ ] Add tests for single-file diffs.
-- [ ] Add tests for multi-file diffs.
-- [ ] Add tests for context lines.
-- [ ] Add tests for deleted files.
-
-## Phase 4: Scanner
-
-- [ ] Create `src/scanner.ts`.
-- [ ] Add error-level policy map:
-  - [ ] U+202A
-  - [ ] U+202B
-  - [ ] U+202C
-  - [ ] U+202D
-  - [ ] U+202E
-  - [ ] U+2066
-  - [ ] U+2067
-  - [ ] U+2068
-  - [ ] U+2069
-  - [ ] U+FE00..U+FE0F
-  - [ ] U+E0100..U+E01EF
-- [ ] Add warning-level policy map:
-  - [ ] U+200B
-  - [ ] U+200C
-  - [ ] U+200D
-  - [ ] U+FEFF
-  - [ ] U+00AD
-  - [ ] U+034F
-  - [ ] U+061C
-- [ ] Implement `scanAddedLine(line, options)`.
-- [ ] Use `for...of` iteration for Unicode code points.
-- [ ] Report 1-based columns.
-- [ ] Honor `includeZeroWidth`.
-- [ ] Add tests for all error code points.
-- [ ] Add tests for variation selector error ranges.
-- [ ] Add tests for all warning code points.
-- [ ] Add test for suppressed warning findings.
-- [ ] Add test for column counting with normal ASCII.
-- [ ] Add test for column counting after an emoji/surrogate pair.
-
-## Phase 5: Annotation layer
-
-- [ ] Create `src/annotate.ts`.
-- [ ] Implement `annotateFindings(findings, options)`.
-- [ ] Use `core.error` for error-level findings.
-- [ ] Use `core.warning` for warning-level findings.
-- [ ] Include file, startLine, startColumn, endLine, endColumn, and title in annotation properties.
-- [ ] Cap emitted annotations at `maxAnnotations`.
-- [ ] Emit `core.notice` if findings are truncated.
-- [ ] Add tests using mocks/spies for `@actions/core`.
-
-## Phase 6: Action entrypoint
-
-- [ ] Create `src/index.ts`.
-- [ ] Read inputs.
-- [ ] Validate boolean inputs strictly.
-- [ ] Validate `max-annotations` as a positive integer.
-- [ ] Read inline `diff` or `diff-file` as UTF-8.
-- [ ] Parse added lines.
-- [ ] Scan added lines.
-- [ ] Annotate findings.
-- [ ] Set outputs.
-- [ ] Fail when error count > 0.
-- [ ] Fail when warning count > 0 and `fail-on-warning=true`.
-- [ ] Pass otherwise.
-- [ ] Add integration-style tests for pass/fail behavior.
-
-## Phase 7: Packaging
-
-- [ ] Build TypeScript.
-- [ ] Bundle action with `ncc` to `dist/index.js`.
-- [ ] Ensure `dist/index.js` is committed.
-- [ ] Ensure `action.yml` points to `dist/index.js`.
-
-## Phase 8: Example workflow and README
-
-- [ ] Create `README.md`.
-- [ ] Include a minimal PR workflow.
-- [ ] Explain why `diff-file` is preferred over multiline diff input.
-- [ ] Explain default severity behavior.
-- [ ] Explain how to make warnings fail.
-- [ ] Explain how to disable zero-width warnings.
-- [ ] Explain branch protection / required status check usage at a high level.
-
-## Phase 9: CI for this action repository
-
-- [ ] Add `.github/workflows/ci.yml`.
-- [ ] Run `npm ci`.
-- [ ] Run typecheck.
-- [ ] Run tests.
-- [ ] Run package build.
-- [ ] Verify generated `dist/index.js` is up to date, if practical.
-
-## Suggested first implementation order for Codex
-
-1. Implement `types.ts`, `scanner.ts`, and scanner tests.
-2. Implement `diff.ts` and diff parser tests.
-3. Implement `annotate.ts` with mocked `@actions/core`.
-4. Implement `index.ts`.
-5. Add `action.yml` and README example.
-6. Bundle with `ncc`.
-7. Run tests and typecheck.
+For dependency updates, run `npm ci` first so local `node_modules` matches `package-lock.json`.

@@ -32,6 +32,19 @@ const VARIATION_SELECTOR_ERROR_CODE_POINTS = [
   ["\u{E01EF}", "U+E01EF", "VARIATION SELECTOR-256"]
 ] as const;
 
+const CONTROL_ERROR_CODE_POINTS = [
+  ["\u0000", "U+0000", "NULL"],
+  ["\u0008", "U+0008", "BACKSPACE"],
+  ["\u000A", "U+000A", "LINE FEED"],
+  ["\u001B", "U+001B", "ESCAPE"],
+  ["\u001F", "U+001F", "INFORMATION SEPARATOR ONE"],
+  ["\u007F", "U+007F", "DELETE"],
+  ["\u0080", "U+0080", "PADDING CHARACTER"],
+  ["\u0085", "U+0085", "NEXT LINE"],
+  ["\u009B", "U+009B", "CONTROL SEQUENCE INTRODUCER"],
+  ["\u009F", "U+009F", "APPLICATION PROGRAM COMMAND"]
+] as const;
+
 test("detects every error-level code point", () => {
   for (const [character, codePoint, name] of ERROR_CODE_POINTS) {
     const findings = scanAddedLine(addedLine(`x${character}y`), { includeZeroWidth: true });
@@ -54,6 +67,24 @@ test("detects variation selectors as error-level findings", () => {
     assert.equal(findings[0].name, name);
     assert.equal(findings[0].column, 2);
   }
+});
+
+test("detects representative control characters as error-level findings", () => {
+  for (const [character, codePoint, name] of CONTROL_ERROR_CODE_POINTS) {
+    const findings = scanAddedLine(addedLine(`x${character}y`), { includeZeroWidth: false });
+
+    assert.equal(findings.length, 1);
+    assert.equal(findings[0].severity, "error");
+    assert.equal(findings[0].codePoint, codePoint);
+    assert.equal(findings[0].name, name);
+    assert.equal(findings[0].column, 2);
+  }
+});
+
+test("does not report tab as a control-character finding", () => {
+  const findings = scanAddedLine(addedLine("x\ty"), { includeZeroWidth: true });
+
+  assert.deepEqual(findings, []);
 });
 
 test("detects every warning-level code point when enabled", () => {

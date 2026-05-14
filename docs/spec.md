@@ -122,10 +122,13 @@ Total number of findings.
 
 ### 5.1 Error-level characters
 
-These should fail by default because they are directly relevant to Trojan Source-style bidirectional text attacks or invisible payload encoding.
+These should fail by default because they are directly relevant to Trojan Source-style bidirectional text attacks, invisible payload encoding, or control-character display/tooling manipulation.
 
 | Code point | Name |
 |---|---|
+| U+0000..U+001F, excluding U+0009 | C0 control characters except CHARACTER TABULATION |
+| U+007F | DELETE |
+| U+0080..U+009F | C1 control characters |
 | U+202A | LEFT-TO-RIGHT EMBEDDING |
 | U+202B | RIGHT-TO-LEFT EMBEDDING |
 | U+202C | POP DIRECTIONAL FORMATTING |
@@ -139,6 +142,8 @@ These should fail by default because they are directly relevant to Trojan Source
 | U+E0100..U+E01EF | VARIATION SELECTOR-17 through VARIATION SELECTOR-256 |
 
 Variation selectors have legitimate Unicode uses, especially for emoji and ideographic variants. In this action they are still error-level because GlassWorm-style payloads can encode bytes into long runs of invisible variation selectors and the action is intended to block newly introduced invisible code in diffs.
+
+Control characters are error-level because they are not normally meaningful as literal source text and can affect terminal/editor display, copy/paste behavior, or downstream tooling. `U+0009 CHARACTER TABULATION` is excluded because tabs are common and valid in source diffs. Line terminators are not expected inside parsed added-line content because diff parsing splits lines before scanning.
 
 ### 5.2 Warning-level characters
 
@@ -159,20 +164,6 @@ If `include-zero-width=false`, warning-level characters are not reported.
 ### 5.3 Planned policy expansions
 
 The current implementation intentionally covers the explicit code points listed above. The following policy expansions are planned as separate feature branches. Each branch must update this section, tests, README, and implementation together before changing behavior.
-
-#### Additional control characters
-
-Add detection for C0 and C1 control characters in added diff lines, excluding characters that are already structural or commonly valid in source diffs.
-
-Initial target set:
-
-- U+0000..U+001F, excluding U+0009 CHARACTER TABULATION.
-- U+007F DELETE.
-- U+0080..U+009F.
-
-Severity: `error`.
-
-Rationale: these characters are not normally meaningful as literal source text and can affect terminal/editor display, copy/paste behavior, or downstream tooling. Line terminators are not expected inside parsed added-line content because diff parsing splits lines before scanning.
 
 #### Additional default-ignorable and format characters
 
@@ -347,7 +338,7 @@ The committed action must include `dist/index.js`, because GitHub Actions runs t
 - `action.yml` defines a JavaScript action with `runs.using` set to a current GitHub-supported Node runtime.
 - The action accepts `diff-file` or `diff` and does not require GitHub API permissions.
 - The action parses unified diffs and scans only added lines.
-- Error-level Bidi control characters and variation selectors produce error annotations and fail the job.
+- Error-level Bidi control characters, variation selectors, and C0/C1 control characters produce error annotations and fail the job.
 - Warning-level invisible characters produce warning annotations and do not fail by default.
 - `fail-on-warning=true` makes warning-level findings fail the job.
 - `include-zero-width=false` suppresses warning-level invisible-character checks.

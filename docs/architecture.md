@@ -119,6 +119,9 @@ const ERROR_CODE_POINTS = new Map<number, string>([
 ]);
 
 // Also treat these ranges as error-level:
+// U+0000..U+001F except U+0009: C0 control characters except tab
+// U+007F: DELETE
+// U+0080..U+009F: C1 control characters
 // U+FE00..U+FE0F: VARIATION SELECTOR-1 through VARIATION SELECTOR-16
 // U+E0100..U+E01EF: VARIATION SELECTOR-17 through VARIATION SELECTOR-256
 
@@ -222,6 +225,10 @@ Bidirectional override/isolate controls are high-risk in source code diffs and s
 
 Variation selectors have legitimate uses, but GlassWorm-style payloads can use invisible variation selector runs to encode bytes. This action treats newly added variation selectors as error-level findings to block that payload channel by default.
 
+### Error for control characters
+
+C0 and C1 control characters are not normally meaningful as literal source text and can alter terminal/editor display, copy/paste behavior, or downstream tooling. The action treats them as error-level findings, except for `U+0009 CHARACTER TABULATION` because tabs are common and valid in source diffs.
+
 ## Testing strategy
 
 Use unit tests for pure modules and a small integration test for `index.ts` behavior.
@@ -239,6 +246,8 @@ Use unit tests for pure modules and a small integration test for `index.ts` beha
 ### `scanner.ts` tests
 
 - Detects each error-level code point.
+- Detects representative C0/C1 control characters as error-level findings.
+- Does not report tab as a control-character finding.
 - Detects each warning-level code point when enabled.
 - Suppresses warning-level code points when disabled.
 - Reports 1-based columns.
