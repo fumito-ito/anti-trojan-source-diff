@@ -13,7 +13,7 @@ inputs:
     required: false
     default: "false"
   include-zero-width:
-    description: Report warning-level zero-width and similar invisible characters.
+    description: Report warning-level zero-width, default-ignorable, and format characters.
     required: false
     default: "true"
   max-annotations:

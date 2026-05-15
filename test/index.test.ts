@@ -217,6 +217,29 @@ test("zero-width warnings are reported by default without failing", async () => 
   assert.equal(calls.warnings.length, 1);
 });
 
+test("default-ignorable and format warnings are reported by default without failing", async () => {
+  const diffFile = await writeTempDiff([
+    "diff --git a/src/app.ts b/src/app.ts",
+    "--- a/src/app.ts",
+    "+++ b/src/app.ts",
+    "@@ -1,0 +1,2 @@",
+    "+const defaultIgnorable = \"a\u180Bb\";",
+    "+const formatCharacter = \"a\u0600b\";"
+  ].join("\n"));
+
+  const calls = await withMockedCore(
+    {
+      "diff-file": diffFile
+    },
+    (core) => run(core)
+  );
+
+  assert.equal(calls.outputs["error-count"], "0");
+  assert.equal(calls.outputs["warning-count"], "2");
+  assert.equal(calls.failed, undefined);
+  assert.equal(calls.warnings.length, 2);
+});
+
 test("zero-width warnings are suppressed when include-zero-width=false", async () => {
   const diffFile = await writeTempDiff([
     "diff --git a/src/app.ts b/src/app.ts",
@@ -224,6 +247,27 @@ test("zero-width warnings are suppressed when include-zero-width=false", async (
     "+++ b/src/app.ts",
     "@@ -1,0 +1,1 @@",
     "+const value = \"a\u200Bb\";"
+  ].join("\n"));
+
+  const calls = await withMockedCore(
+    {
+      "diff-file": diffFile,
+      "include-zero-width": "false"
+    },
+    (core) => run(core)
+  );
+
+  assert.equal(calls.outputs["finding-count"], "0");
+  assert.equal(calls.failed, undefined);
+});
+
+test("expanded warning characters are suppressed when include-zero-width=false", async () => {
+  const diffFile = await writeTempDiff([
+    "diff --git a/src/app.ts b/src/app.ts",
+    "--- a/src/app.ts",
+    "+++ b/src/app.ts",
+    "@@ -1,0 +1,1 @@",
+    "+const value = \"a\u180B\u0600b\";"
   ].join("\n"));
 
   const calls = await withMockedCore(

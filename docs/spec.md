@@ -88,7 +88,7 @@ Exactly one input source should be used. The action fails if both `diff-file` an
 - Required: no
 - Default: `true`
 - Allowed values: `true`, `false`
-- Meaning: if `true`, report warning-level zero-width and similar invisible characters.
+- Meaning: if `true`, report warning-level zero-width, default-ignorable, and format characters.
 
 #### `max-annotations`
 
@@ -158,28 +158,16 @@ These are useful for Discord/SNS copy-paste defense, but can have legitimate use
 | U+00AD | SOFT HYPHEN |
 | U+034F | COMBINING GRAPHEME JOINER |
 | U+061C | ARABIC LETTER MARK |
+| Unicode `Default_Ignorable_Code_Point`, excluding error-level characters and the explicit warnings above | DEFAULT IGNORABLE CODE POINT |
+| Unicode `General_Category=Format`, excluding error-level characters, explicit warnings above, and duplicate default-ignorable reports | FORMAT CHARACTER |
 
-If `include-zero-width=false`, warning-level characters are not reported.
+If `include-zero-width=false`, warning-level characters are not reported. The option name is retained for backward compatibility even though the warning set now includes broader default-ignorable and format characters.
+
+The source of truth for the expanded warning properties is the Unicode Character Database: `DerivedCoreProperties.txt` for `Default_Ignorable_Code_Point` and `extracted/DerivedGeneralCategory.txt` for `General_Category=Format`. The implementation uses Node 24 ECMAScript Unicode property escapes instead of a checked-in generated table. When the action runtime is upgraded, compare the runtime property behavior against the current Unicode data files and update tests and documentation in the same branch.
 
 ### 5.3 Planned policy expansions
 
-The current implementation intentionally covers the explicit code points listed above. The following policy expansions are planned as separate feature branches. Each branch must update this section, tests, README, and implementation together before changing behavior.
-
-#### Additional default-ignorable and format characters
-
-Add warning-level detection for additional Unicode characters whose display can be absent, unstable, or context-dependent, using Unicode data as the source of truth rather than a hand-written ad hoc list.
-
-Initial target set:
-
-- Unicode `Default_Ignorable_Code_Point` characters not already classified as error-level.
-- Unicode general category `Cf` format characters not already classified as error-level.
-- Exclude characters already listed in the warning-level table from duplicate reporting.
-
-Severity: `warning` by default; fails only when `fail-on-warning=true`.
-
-Configuration: `include-zero-width=false` suppresses these findings for backward compatibility, even though the expanded set is broader than zero-width characters.
-
-Rationale: many format/default-ignorable characters have legitimate uses in localized text, emoji sequences, identifiers, and typography. They are still review-worthy in source diffs because they may be invisible to reviewers.
+The current implementation intentionally covers the explicit error-level characters, the explicit warning-level characters, and the Unicode default-ignorable and format properties listed above. The following policy expansion is planned as a separate feature branch. The branch must update this section, tests, README, and implementation together before changing behavior.
 
 #### Mixed-script confusable identifiers
 

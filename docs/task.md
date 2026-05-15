@@ -98,23 +98,24 @@ This file tracks the current implementation state against `docs/spec.md`.
   - [x] Verifies generated `dist` is up to date
   - [x] Self-checks pull request diffs using this local action
 
+## Completed policy expansions
+
+- [x] Additional default-ignorable and format characters
+  - [x] Choose the Unicode data source and generation/update workflow.
+  - [x] Add warning-level detection for `Default_Ignorable_Code_Point` characters not already error-level.
+  - [x] Add warning-level detection for Unicode `Cf` format characters not already error-level.
+  - [x] Avoid duplicate reporting for characters already listed in the existing warning policy.
+  - [x] Keep `include-zero-width=false` as the suppression switch for this expanded warning set.
+  - [x] Add focused tests for representative default-ignorable and format characters.
+  - [x] Add tests proving existing error-level characters remain errors.
+  - [x] Update README policy text.
+  - [x] Run `npm test`.
+  - [x] Run `npm run typecheck`.
+  - [x] Run `npm run package`.
+
 ## Open planned policy expansions
 
 The following tasks are intentionally not implemented yet. Implement each item on a separate feature branch and update `docs/spec.md`, tests, README, and generated `dist` together.
-
-### Additional default-ignorable and format characters
-
-- [ ] Choose the Unicode data source and generation/update workflow.
-- [ ] Add warning-level detection for `Default_Ignorable_Code_Point` characters not already error-level.
-- [ ] Add warning-level detection for Unicode `Cf` format characters not already error-level.
-- [ ] Avoid duplicate reporting for characters already listed in the existing warning policy.
-- [ ] Keep `include-zero-width=false` as the suppression switch for this expanded warning set.
-- [ ] Add focused tests for representative default-ignorable and format characters.
-- [ ] Add tests proving existing error-level characters remain errors.
-- [ ] Update README policy text.
-- [ ] Run `npm test`.
-- [ ] Run `npm run typecheck`.
-- [ ] Run `npm run package`.
 
 ### Mixed-script confusable identifiers
 
