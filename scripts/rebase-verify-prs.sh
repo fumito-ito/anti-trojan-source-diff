@@ -7,6 +7,18 @@ remote="${REMOTE:-origin}"
 limit="${PR_LIMIT:-100}"
 dry_run="${DRY_RUN:-false}"
 
+case "$limit" in
+  '' | *[!0-9]*)
+    echo "error: PR_LIMIT must be a positive integer." >&2
+    exit 1
+    ;;
+esac
+
+if [ "$limit" -le 0 ]; then
+  echo "error: PR_LIMIT must be greater than 0." >&2
+  exit 1
+fi
+
 if ! command -v gh >/dev/null 2>&1; then
   echo "error: gh is required." >&2
   exit 1
@@ -21,7 +33,7 @@ repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
 tmp_root="$(mktemp -d "${TMPDIR:-/tmp}/anti-trojan-source-diff-rebase-verify-prs.XXXXXX")"
-pull_requests_file="${tmp_root}/pull-requests.tsv"
+all_pull_requests_file="${tmp_root}/all-pull-requests.tsv"
 worktrees_file="${tmp_root}/worktrees.txt"
 touch "$worktrees_file"
 
@@ -42,6 +54,7 @@ git fetch --no-tags "$remote" "+refs/heads/${base_branch}:refs/remotes/${remote}
 
 base_ref="refs/remotes/${remote}/${base_branch}"
 base_sha="$(git rev-parse "$base_ref")"
+fetch_limit=$((limit + 1))
 
 if [ -n "${GH_REPO:-}" ]; then
   gh pr list \
@@ -49,31 +62,39 @@ if [ -n "${GH_REPO:-}" ]; then
     --state open \
     --base "$base_branch" \
     --label "$label" \
-    --limit "$limit" \
+    --limit "$fetch_limit" \
     --json number,headRefName,headRefOid,isCrossRepository \
-    --jq '.[] | select(.isCrossRepository == false) | [.number, .headRefName, .headRefOid] | @tsv' \
-    > "$pull_requests_file"
+    --jq '.[] | [.number, .headRefName, .headRefOid, .isCrossRepository] | @tsv' \
+    > "$all_pull_requests_file"
 else
   gh pr list \
     --state open \
     --base "$base_branch" \
     --label "$label" \
-    --limit "$limit" \
+    --limit "$fetch_limit" \
     --json number,headRefName,headRefOid,isCrossRepository \
-    --jq '.[] | select(.isCrossRepository == false) | [.number, .headRefName, .headRefOid] | @tsv' \
-    > "$pull_requests_file"
+    --jq '.[] | [.number, .headRefName, .headRefOid, .isCrossRepository] | @tsv' \
+    > "$all_pull_requests_file"
 fi
 
-if [ ! -s "$pull_requests_file" ]; then
+tab="$(printf '\t')"
+returned_count="$(wc -l < "$all_pull_requests_file" | tr -d '[:space:]')"
+if [ "$returned_count" -gt "$limit" ]; then
+  echo "error: found more than PR_LIMIT=${limit} open PRs with label '${label}' targeting '${base_branch}'." >&2
+  echo "error: refusing to process a truncated set. Increase PR_LIMIT or narrow the label/base filters." >&2
+  exit 1
+fi
+
+if ! grep -q "${tab}false$" "$all_pull_requests_file"; then
   echo "No open same-repository PRs with label '${label}' targeting '${base_branch}'."
   exit 0
 fi
 
 failed=0
-tab="$(printf '\t')"
 
-while IFS="$tab" read -r number head_ref head_oid; do
+while IFS="$tab" read -r number head_ref head_oid is_cross_repository; do
   [ -n "$number" ] || continue
+  [ "$is_cross_repository" = "false" ] || continue
 
   remote_head_ref="refs/remotes/${remote}/${head_ref}"
   worktree="${tmp_root}/pr-${number}"
@@ -110,6 +131,6 @@ while IFS="$tab" read -r number head_ref head_oid; do
     git -C "$worktree" rebase --abort >/dev/null 2>&1 || true
     failed=1
   fi
-done < "$pull_requests_file"
+done < "$all_pull_requests_file"
 
 exit "$failed"
