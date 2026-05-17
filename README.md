@@ -78,7 +78,7 @@ Prefer `diff-file` for large diffs to avoid workflow output size and escaping li
 | `diff` | no | | Unified diff text to scan. Prefer `diff-file` for large diffs. |
 | `diff-file` | no | | Path to a unified diff file. |
 | `fail-on-warning` | no | `false` | Fail when warning-level findings are detected. |
-| `include-zero-width` | no | `true` | Report zero-width and similar invisible characters as warnings. |
+| `include-zero-width` | no | `true` | Report zero-width, default-ignorable, and format characters as warnings. |
 | `max-annotations` | no | `50` | Maximum number of GitHub annotations to emit. Findings are still counted after this cap. |
 
 Either `diff-file` or `diff` must be provided. If both contain diff text, the action fails with an input error.
@@ -99,7 +99,7 @@ Variation selectors such as `U+FE0F VARIATION SELECTOR-16` and `U+E0100 VARIATIO
 
 Control characters such as `U+0000 NULL`, `U+001B ESCAPE`, `U+007F DELETE`, and C1 controls `U+0080..U+009F` are error-level findings. `U+0009 CHARACTER TABULATION` is excluded because tabs are common and valid in source diffs.
 
-Zero-width and similar invisible characters such as `U+200B ZERO WIDTH SPACE`, `U+200D ZERO WIDTH JOINER`, and `U+00AD SOFT HYPHEN` are warning-level findings by default. These characters can be legitimate in localized text, emoji sequences, or typography, so warnings do not fail unless configured.
+Zero-width and similar invisible characters such as `U+200B ZERO WIDTH SPACE`, `U+200D ZERO WIDTH JOINER`, and `U+00AD SOFT HYPHEN` are warning-level findings by default. The warning policy also covers additional Unicode `Default_Ignorable_Code_Point` characters and `General_Category=Format` characters that are not already error-level findings. These characters can be legitimate in localized text, emoji sequences, identifiers, or typography, so warnings do not fail unless configured.
 
 To fail on warnings:
 
@@ -110,7 +110,7 @@ To fail on warnings:
     fail-on-warning: true
 ```
 
-To ignore zero-width warning-level characters:
+To ignore warning-level zero-width, default-ignorable, and format characters:
 
 ```yaml
 - uses: OWNER/anti-trojan-source-diff-action@v1
@@ -135,3 +135,4 @@ npm run package
 - [nickboucher/trojan-source](https://github.com/nickboucher/trojan-source) for Trojan Source proof-of-concept examples and background material.
 - [Trojan Source: Invisible Vulnerabilities](https://trojansource.codes/) for the related paper and disclosure material.
 - [Endor Labs: Invisible Threats and the Blind Spots of Security](https://www.endorlabs.com/reports/invisible-threats-glassworm-unicode-vscode) for GlassWorm variation selector payload analysis.
+- [Unicode Character Database](https://www.unicode.org/ucd/) for `Default_Ignorable_Code_Point` and `General_Category=Format` property data.

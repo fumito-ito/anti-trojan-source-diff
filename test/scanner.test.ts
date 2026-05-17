@@ -25,6 +25,11 @@ const WARNING_CODE_POINTS = [
   ["\u061C", "U+061C", "ARABIC LETTER MARK"]
 ] as const;
 
+const EXPANDED_WARNING_CODE_POINTS = [
+  ["\u180B", "U+180B", "DEFAULT IGNORABLE CODE POINT"],
+  ["\u0600", "U+0600", "FORMAT CHARACTER"]
+] as const;
+
 const VARIATION_SELECTOR_ERROR_CODE_POINTS = [
   ["\uFE00", "U+FE00", "VARIATION SELECTOR-1"],
   ["\uFE0F", "U+FE0F", "VARIATION SELECTOR-16"],
@@ -99,10 +104,40 @@ test("detects every warning-level code point when enabled", () => {
   }
 });
 
+test("detects representative default-ignorable and format characters as warnings", () => {
+  for (const [character, codePoint, name] of EXPANDED_WARNING_CODE_POINTS) {
+    const findings = scanAddedLine(addedLine(`x${character}y`), { includeZeroWidth: true });
+
+    assert.equal(findings.length, 1);
+    assert.equal(findings[0].severity, "warning");
+    assert.equal(findings[0].codePoint, codePoint);
+    assert.equal(findings[0].name, name);
+    assert.equal(findings[0].column, 2);
+  }
+});
+
+test("does not duplicate characters that match multiple expanded warning policies", () => {
+  const findings = scanAddedLine(addedLine("x\u200Ey"), { includeZeroWidth: true });
+
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].severity, "warning");
+  assert.equal(findings[0].codePoint, "U+200E");
+  assert.equal(findings[0].name, "DEFAULT IGNORABLE CODE POINT");
+});
+
 test("suppresses warning-level code points when disabled", () => {
-  const findings = scanAddedLine(addedLine("a\u200Bb"), { includeZeroWidth: false });
+  const findings = scanAddedLine(addedLine("a\u200B\u180B\u0600b"), { includeZeroWidth: false });
 
   assert.deepEqual(findings, []);
+});
+
+test("keeps existing error-level characters as errors", () => {
+  const findings = scanAddedLine(addedLine("x\u202Ey"), { includeZeroWidth: true });
+
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].severity, "error");
+  assert.equal(findings[0].codePoint, "U+202E");
+  assert.equal(findings[0].name, "RIGHT-TO-LEFT OVERRIDE");
 });
 
 test("reports 1-based columns for ASCII content", () => {

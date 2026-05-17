@@ -26,6 +26,9 @@ const WARNING_CODE_POINTS = new Map<number, string>([
   [0x061c, "ARABIC LETTER MARK"]
 ]);
 
+const DEFAULT_IGNORABLE_CODE_POINT_PATTERN = /^\p{Default_Ignorable_Code_Point}$/u;
+const FORMAT_CHARACTER_PATTERN = /^\p{General_Category=Format}$/u;
+
 const C0_CONTROL_CODE_POINT_NAMES = new Map<number, string>([
   [0x0000, "NULL"],
   [0x0001, "START OF HEADING"],
@@ -115,9 +118,11 @@ export function scanAddedLine(line: AddedLine, options: ScanOptions): Finding[] 
       continue;
     }
 
-    const warningName = WARNING_CODE_POINTS.get(value);
-    if (options.includeZeroWidth && warningName !== undefined) {
-      findings.push(toFinding(line, column, value, warningName, "warning", character));
+    if (options.includeZeroWidth) {
+      const warningName = getWarningCodePointName(value, character);
+      if (warningName !== undefined) {
+        findings.push(toFinding(line, column, value, warningName, "warning", character));
+      }
     }
 
     column += 1;
@@ -142,6 +147,27 @@ function getVariationSelectorName(value: number): string | undefined {
 
   if (value >= 0xe0100 && value <= 0xe01ef) {
     return `VARIATION SELECTOR-${value - 0xe0100 + 17}`;
+  }
+
+  return undefined;
+}
+
+function getWarningCodePointName(value: number, character: string): string | undefined {
+  if (value < 0x80) {
+    return undefined;
+  }
+
+  const mappedName = WARNING_CODE_POINTS.get(value);
+  if (mappedName !== undefined) {
+    return mappedName;
+  }
+
+  if (DEFAULT_IGNORABLE_CODE_POINT_PATTERN.test(character)) {
+    return "DEFAULT IGNORABLE CODE POINT";
+  }
+
+  if (FORMAT_CHARACTER_PATTERN.test(character)) {
+    return "FORMAT CHARACTER";
   }
 
   return undefined;
