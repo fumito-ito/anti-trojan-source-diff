@@ -1,0 +1,14 @@
+This file intentionally exists to verify the GitHub Action detects
+default-ignorable and format Unicode characters that were added in the
+expanded warning detection feature.
+
+The following lines contain characters that should trigger warnings:
+
+Line with U+180E MONGOLIAN VOWEL SEPARATOR: test᠎text
+Line with U+2060 WORD JOINER: test⁠text
+Line with U+2061 FUNCTION APPLICATION: test⁡text
+Line with U+0600 ARABIC NUMBER SIGN: test؀text
+Line with U+FFF9 INTERLINEAR ANNOTATION ANCHOR: test￹text
+
+These characters are invisible or render inconsistently and should be
+detected by the expanded warning policy.
