@@ -329,9 +329,11 @@ function scanAddedLine(line, options) {
             column += 1;
             continue;
         }
-        const warningName = getWarningCodePointName(value, character);
-        if (options.includeZeroWidth && warningName !== undefined) {
-            findings.push(toFinding(line, column, value, warningName, "warning", character));
+        if (options.includeZeroWidth) {
+            const warningName = getWarningCodePointName(value, character);
+            if (warningName !== undefined) {
+                findings.push(toFinding(line, column, value, warningName, "warning", character));
+            }
         }
         column += 1;
     }
@@ -354,6 +356,9 @@ function getVariationSelectorName(value) {
     return undefined;
 }
 function getWarningCodePointName(value, character) {
+    if (value < 0x80) {
+        return undefined;
+    }
     const mappedName = WARNING_CODE_POINTS.get(value);
     if (mappedName !== undefined) {
         return mappedName;
