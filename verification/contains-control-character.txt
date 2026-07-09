@@ -1,0 +1,5 @@
+This fixture intentionally contains a C1 control character.
+
+The payload marker below contains U+0085 NEXT LINE between the brackets.
+
+payload: []
